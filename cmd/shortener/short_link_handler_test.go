@@ -17,7 +17,6 @@ func TestShortLinkHandler(t *testing.T) {
 	}
 	type want struct {
 		status int
-		// shortLink string
 	}
 	tests := []struct {
 		name string
@@ -33,41 +32,80 @@ func TestShortLinkHandler(t *testing.T) {
 			},
 			want: want{
 				status: http.StatusCreated,
-				// shortLink: "http://localhost:8080/123",
 			},
 		},
-		// TODO: Add test cases.
+		{
+			name: "Should return 403 for non-existing short link",
+			url:  "/nonexisting",
+			args: args{
+				link: "",
+			},
+			want: want{
+				status: http.StatusForbidden,
+			},
+		},
+		{
+			name: "Should return 403 for invalid method",
+			url:  "/",
+			args: args{
+				link: "",
+			},
+			want: want{
+				status: http.StatusForbidden,
+			},
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodPost, tt.url, strings.NewReader(tt.args.link))
-			w := httptest.NewRecorder()
-			r.Header.Set("Content-Type", "text/plain")
+			if tt.name == "Should generate short link" {
+				r := httptest.NewRequest(http.MethodPost, tt.url, strings.NewReader(tt.args.link))
+				w := httptest.NewRecorder()
+				r.Header.Set("Content-Type", "text/plain")
 
-			ShortLinkHandler(w, r)
+				ShortLinkHandler(w, r)
 
-			res := w.Result()
+				res := w.Result()
+				defer res.Body.Close()
 
-			assert.Equal(t, res.StatusCode, tt.want.status)
+				assert.Equal(t, res.StatusCode, tt.want.status)
 
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
+				resBody, err := io.ReadAll(res.Body)
+				require.NoError(t, err)
 
-			require.NoError(t, err)
+				rn := httptest.NewRequest(http.MethodGet, string(resBody), nil)
+				wn := httptest.NewRecorder()
 
-			rn := httptest.NewRequest(http.MethodGet, string(resBody), nil)
-			wn := httptest.NewRecorder()
-			rn.Header.Set("Content-Type", "text/plain")
+				ShortLinkHandler(wn, rn)
 
-			ShortLinkHandler(wn, rn)
+				res2 := wn.Result()
+				defer res2.Body.Close()
 
-			res2 := wn.Result()
+				assert.Equal(t, res2.StatusCode, http.StatusTemporaryRedirect)
 
-			assert.Equal(t, res2.StatusCode, http.StatusTemporaryRedirect)
+				location := res2.Header.Get("location")
+				assert.Equal(t, tt.args.link, location)
+			} else if tt.name == "Should return 403 for non-existing short link" {
+				r := httptest.NewRequest(http.MethodGet, tt.url, nil)
+				w := httptest.NewRecorder()
 
-			location := res2.Header.Get("location")
+				ShortLinkHandler(w, r)
 
-			assert.Equal(t, tt.args.link, location)
+				res := w.Result()
+				defer res.Body.Close()
+
+				assert.Equal(t, res.StatusCode, tt.want.status)
+			} else if tt.name == "Should return 403 for invalid method" {
+				r := httptest.NewRequest(http.MethodPut, tt.url, nil)
+				w := httptest.NewRecorder()
+
+				ShortLinkHandler(w, r)
+
+				res := w.Result()
+				defer res.Body.Close()
+
+				assert.Equal(t, res.StatusCode, tt.want.status)
+			}
 		})
 	}
 }
