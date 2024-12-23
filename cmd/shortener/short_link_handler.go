@@ -38,14 +38,14 @@ func ShortLinkHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Not found", http.StatusForbidden)
 		}
 
-		generatedId := RandomString(8)
+		generatedID := RandomString(8)
 
-		db[generatedId] = string(resBody)
+		db[generatedID] = string(resBody)
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 
-		response := fmt.Sprintf("http://localhost:8080/%s", generatedId)
+		response := fmt.Sprintf("http://localhost:8080/%s", generatedID)
 
 		w.Write([]byte(response))
 	default:
