@@ -5,6 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -40,7 +41,25 @@ func ShortLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 		generatedID := RandomString(8)
 
-		db[generatedID] = string(resBody)
+		var urlDestination string = string(resBody)
+
+		if res := r.Header.Get("Content-Type"); res == "application/x-www-form-urlencoded" {
+			// Парсим данные формы
+			values, err := url.ParseQuery(urlDestination)
+			if err != nil {
+				http.Error(w, "Invalid form data", http.StatusBadRequest)
+				return
+			}
+
+			// Извлекаем значение по ключу "url"
+			urlDestination = values.Get("url")
+			if urlDestination == "" {
+				http.Error(w, "URL parameter is required", http.StatusBadRequest)
+				return
+			}
+		}
+
+		db[generatedID] = urlDestination
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
