@@ -41,7 +41,7 @@ func ShortLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 		generatedID := RandomString(8)
 
-		var urlDestination string = string(resBody)
+		urlDestination := string(resBody)
 
 		if res := r.Header.Get("Content-Type"); res == "application/x-www-form-urlencoded" {
 			// Парсим данные формы
