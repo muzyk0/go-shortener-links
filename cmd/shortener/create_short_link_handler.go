@@ -44,10 +44,10 @@ func CreateShortLinkHandle(w http.ResponseWriter, r *http.Request) {
 	host := flagBaseShortenerAddr
 
 	if flagBaseShortenerAddr == "" {
-		host = r.Host
+		host = fmt.Sprintf("http://%s", r.Host)
 	}
 
-	response := fmt.Sprintf("http://%s/%s", host, generatedID)
+	response := fmt.Sprintf("%s/%s", host, generatedID)
 
 	w.Write([]byte(response))
 }
