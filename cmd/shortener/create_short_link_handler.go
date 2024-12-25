@@ -41,7 +41,13 @@ func CreateShortLinkHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 
-	response := fmt.Sprintf("http://%s/%s", r.Host, generatedID)
+	host := flagBaseShortenerAddr
+
+	if flagBaseShortenerAddr == "" {
+		host = r.Host
+	}
+
+	response := fmt.Sprintf("http://%s/%s", host, generatedID)
 
 	w.Write([]byte(response))
 }

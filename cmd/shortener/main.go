@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 )
 
 func main() {
+	parseFlags()
 
-	if err := http.ListenAndServe(":8080", AppRouter()); err != nil {
+	fmt.Println("Running server on", flagRunAddr)
+	if err := http.ListenAndServe(flagRunAddr, AppRouter()); err != nil {
 		panic(err)
 	}
 }
