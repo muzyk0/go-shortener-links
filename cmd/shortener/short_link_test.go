@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,7 +65,7 @@ func TestShortLinkHandler(t *testing.T) {
 				w := httptest.NewRecorder()
 				r.Header.Set("Content-Type", "text/plain")
 
-				ShortLinkHandler(w, r)
+				CreateShortLinkHandle(w, r)
 
 				res := w.Result()
 				defer res.Body.Close()
@@ -73,15 +75,22 @@ func TestShortLinkHandler(t *testing.T) {
 				resBody, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
 
+				urlParam := strings.Replace(string(resBody), "http://example.com/", "", 1)
+
 				rn := httptest.NewRequest(http.MethodGet, string(resBody), nil)
 				wn := httptest.NewRecorder()
 
-				ShortLinkHandler(wn, rn)
+				rctx := chi.NewRouteContext()
+				rctx.URLParams.Add("id", urlParam)
+
+				rn = rn.WithContext(context.WithValue(rn.Context(), chi.RouteCtxKey, rctx))
+
+				RedirectHandle(wn, rn)
 
 				res2 := wn.Result()
 				defer res2.Body.Close()
 
-				assert.Equal(t, res2.StatusCode, http.StatusTemporaryRedirect)
+				assert.Equal(t, http.StatusTemporaryRedirect, res2.StatusCode)
 
 				location := res2.Header.Get("location")
 				assert.Equal(t, tt.args.link, location)
@@ -89,7 +98,13 @@ func TestShortLinkHandler(t *testing.T) {
 				r := httptest.NewRequest(http.MethodGet, tt.url, nil)
 				w := httptest.NewRecorder()
 
-				ShortLinkHandler(w, r)
+				urlParam := strings.Replace(tt.url, "/", "", 1)
+				rctx := chi.NewRouteContext()
+				rctx.URLParams.Add("id", urlParam)
+
+				r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+
+				RedirectHandle(w, r)
 
 				res := w.Result()
 				defer res.Body.Close()
@@ -99,7 +114,13 @@ func TestShortLinkHandler(t *testing.T) {
 				r := httptest.NewRequest(http.MethodPut, tt.url, nil)
 				w := httptest.NewRecorder()
 
-				ShortLinkHandler(w, r)
+				urlParam := strings.Replace(tt.url, "/", "", 1)
+				rctx := chi.NewRouteContext()
+				rctx.URLParams.Add("id", urlParam)
+
+				r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+
+				RedirectHandle(w, r)
 
 				res := w.Result()
 				defer res.Body.Close()

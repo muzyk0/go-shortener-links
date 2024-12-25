@@ -1,13 +1,12 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func main() {
-	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", ShortLinkHandler)
-
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":8080", AppRouter()); err != nil {
 		panic(err)
 	}
 }
