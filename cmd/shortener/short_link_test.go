@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestShortLinkHandler(t *testing.T) {
+func TestShortLink(t *testing.T) {
 	type args struct {
 		link string
 	}

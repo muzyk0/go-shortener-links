@@ -3,14 +3,10 @@ package main
 import (
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
-
-var db = map[string]string{}
 
 func ShortLinkHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -71,20 +67,4 @@ func ShortLinkHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 	}
 
-}
-
-// RandomString generates a random string of a given length
-func RandomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-	// Создайте новый генератор с новыми настроями
-	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	// Создайте срез байтов для хранения результата
-	result := make([]byte, length)
-	for i := range result {
-		// Выберите случайный символ из charset
-		result[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(result)
 }
