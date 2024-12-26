@@ -10,6 +10,7 @@ type Config struct {
 	version               string
 	FlagRunAddr           string
 	FlagBaseShortenerAddr string
+	FlagLogLevel          string
 }
 
 func NewConfig() *Config {
@@ -27,6 +28,8 @@ func (c *Config) ParseFlags() {
 
 	flag.StringVar(&c.FlagBaseShortenerAddr, "b", "", "base address to shortener links")
 
+	flag.StringVar(&c.FlagLogLevel, "l", "info", "log level")
+
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "App version: %v\n", c.version)
 		flag.PrintDefaults()
@@ -41,5 +44,9 @@ func (c *Config) ParseFlags() {
 
 	if envFlagBaseShortenerAddr := os.Getenv("BASE_URL"); envFlagBaseShortenerAddr != "" {
 		c.FlagBaseShortenerAddr = envFlagBaseShortenerAddr
+	}
+
+	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+		c.FlagLogLevel = envLogLevel
 	}
 }

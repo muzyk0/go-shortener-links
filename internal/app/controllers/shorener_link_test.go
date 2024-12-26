@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/muzyk0/go-shortener-links/internal/app/logger"
 	"go-shorener-links/config"
 	"io"
 	"net/http"
@@ -37,7 +38,9 @@ func testRequest(t *testing.T, method,
 
 func TestShortenerLink(t *testing.T) {
 	appConfig := config.NewConfig()
-	ts := httptest.NewServer(AppRouter(appConfig))
+	appLogger, err := logger.NewLogger(appConfig.FlagLogLevel)
+	require.NoError(t, err)
+	ts := httptest.NewServer(AppRouter(appConfig, *appLogger))
 	defer ts.Close()
 
 	type args struct {
