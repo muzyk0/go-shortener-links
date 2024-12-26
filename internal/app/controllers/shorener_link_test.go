@@ -1,6 +1,7 @@
-package main
+package controllers
 
 import (
+	"go-shorener-links/config"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestShortLinkHandler(t *testing.T) {
+func testRequest(t *testing.T, method,
+	path string, body io.Reader) (*http.Response, string) {
+	req, err := http.NewRequest(method, path, body)
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "text/plain")
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// Если будет редирект, ничего не делать, просто не следовать за ним
+			return http.ErrUseLastResponse
+		},
+	}
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(respBody)
+}
+
+func TestShortenerLink(t *testing.T) {
+	appConfig := config.NewConfig()
+	ts := httptest.NewServer(AppRouter(appConfig))
+	defer ts.Close()
+
 	type args struct {
 		link string
 	}
@@ -59,51 +87,23 @@ func TestShortLinkHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.name == "Should generate short link" {
-				r := httptest.NewRequest(http.MethodPost, tt.url, strings.NewReader(tt.args.link))
-				w := httptest.NewRecorder()
-				r.Header.Set("Content-Type", "text/plain")
-
-				ShortLinkHandler(w, r)
-
-				res := w.Result()
+				res, resBody := testRequest(t, http.MethodPost, ts.URL+tt.url, strings.NewReader(tt.args.link))
 				defer res.Body.Close()
-
 				assert.Equal(t, res.StatusCode, tt.want.status)
 
-				resBody, err := io.ReadAll(res.Body)
-				require.NoError(t, err)
+				redirectResponse, _ := testRequest(t, http.MethodGet, string(resBody), nil)
+				defer redirectResponse.Body.Close()
+				assert.Equal(t, http.StatusTemporaryRedirect, redirectResponse.StatusCode)
 
-				rn := httptest.NewRequest(http.MethodGet, string(resBody), nil)
-				wn := httptest.NewRecorder()
-
-				ShortLinkHandler(wn, rn)
-
-				res2 := wn.Result()
-				defer res2.Body.Close()
-
-				assert.Equal(t, res2.StatusCode, http.StatusTemporaryRedirect)
-
-				location := res2.Header.Get("location")
+				location := redirectResponse.Header.Get("location")
 				assert.Equal(t, tt.args.link, location)
 			} else if tt.name == "Should return 403 for non-existing short link" {
-				r := httptest.NewRequest(http.MethodGet, tt.url, nil)
-				w := httptest.NewRecorder()
-
-				ShortLinkHandler(w, r)
-
-				res := w.Result()
+				res, _ := testRequest(t, http.MethodGet, ts.URL+tt.url, nil)
 				defer res.Body.Close()
-
 				assert.Equal(t, res.StatusCode, tt.want.status)
 			} else if tt.name == "Should return 403 for invalid method" {
-				r := httptest.NewRequest(http.MethodPut, tt.url, nil)
-				w := httptest.NewRecorder()
-
-				ShortLinkHandler(w, r)
-
-				res := w.Result()
+				res, _ := testRequest(t, http.MethodPut, ts.URL+tt.url, nil)
 				defer res.Body.Close()
-
 				assert.Equal(t, res.StatusCode, tt.want.status)
 			}
 		})

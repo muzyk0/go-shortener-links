@@ -1,16 +1,16 @@
-package main
+package utils
 
 import (
 	"testing"
 )
 
-// TestRandomString checks if the RandomString function behaves as expected
-func TestRandomString(t *testing.T) {
+// GenerateRandomString checks if the GenerateRandomString function behaves as expected
+func TestGenerateRandomString(t *testing.T) {
 	// Test to check the length of the generated string
 	// Проверяет, соответствует ли длина сгенерированной строки заданной длине.
 	t.Run("Check length", func(t *testing.T) {
 		length := 10
-		result := RandomString(length)
+		result := GenerateRandomString(length)
 		if len(result) != length {
 			t.Errorf("Expected string length %d, but got %d", length, len(result))
 		}
@@ -20,11 +20,11 @@ func TestRandomString(t *testing.T) {
 	// Дважды вызывает функцию и сравнивает результаты, чтобы убедиться в их различии (очень маловероятно, но возможно, что они совпадут при достаточно большой вероятности).
 	t.Run("Check randomness", func(t *testing.T) {
 		length := 10
-		result1 := RandomString(length)
-		result2 := RandomString(length)
+		result1 := GenerateRandomString(length)
+		result2 := GenerateRandomString(length)
 
 		for result1 == result2 {
-			result2 = RandomString(length)
+			result2 = GenerateRandomString(length)
 		}
 
 		if result1 == result2 {
@@ -35,7 +35,7 @@ func TestRandomString(t *testing.T) {
 	// Edge case: Check length zero
 	// Проверяет особый случай, где длина строки равна нулю. Ожидается пустая строка.
 	t.Run("Check zero length", func(t *testing.T) {
-		result := RandomString(0)
+		result := GenerateRandomString(0)
 		if result != "" {
 			t.Errorf("Expected empty string, but got %s", result)
 		}
@@ -44,7 +44,7 @@ func TestRandomString(t *testing.T) {
 	// Edge case: Check negative length
 	// Проверяет случай, где передан отрицательный параметр длины. Ожидается пустая строка, так как неверные длины обрабатываются аналогично нулевым длинам.
 	t.Run("Check negative length", func(t *testing.T) {
-		result := RandomString(-5)
+		result := GenerateRandomString(-5)
 		if result != "" {
 			t.Errorf("Expected empty string for negative length, but got %s", result)
 		}
