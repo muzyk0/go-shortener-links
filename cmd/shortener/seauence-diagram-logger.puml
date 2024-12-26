@@ -1,0 +1,13 @@
+@startuml
+participant MainApplication as Main
+participant Configuration as Config
+participant Logger as Logger
+participant Router as Router
+
+Main->>Config: Parse Flags and Environment
+Config-->>Main: Return Configuration
+Main->>Logger: Initialize Logger
+Logger-->>Main: Return Logger Instance
+Main->>Router: Create Router with Logger
+Router-->>Main: Return Configured Router
+@enduml
