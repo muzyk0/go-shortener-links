@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"go-shorener-links/config"
 	"io"
 	"net/http"
 	"net/url"
@@ -41,7 +42,13 @@ func CreateShortLinkHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 
-	response := fmt.Sprintf("http://%s/%s", r.Host, generatedID)
+	host := config.FlagBaseShortenerAddr
+
+	if config.FlagBaseShortenerAddr == "" {
+		host = fmt.Sprintf("http://%s", r.Host)
+	}
+
+	response := fmt.Sprintf("%s/%s", host, generatedID)
 
 	w.Write([]byte(response))
 }

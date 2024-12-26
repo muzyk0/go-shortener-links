@@ -1,12 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"go-shorener-links/config"
 	"net/http"
 )
 
 func main() {
+	config.ParseFlags()
 
-	if err := http.ListenAndServe(":8080", AppRouter()); err != nil {
+	fmt.Println("Running server on", config.FlagRunAddr)
+	if err := http.ListenAndServe(config.FlagRunAddr, AppRouter()); err != nil {
 		panic(err)
 	}
 }
