@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"os"
 )
 
 var version = "0.0.1"
@@ -26,4 +27,12 @@ func ParseFlags() {
 
 	// парсим переданные серверу аргументы в зарегистрированные переменные
 	flag.Parse()
+
+	if envFlagRunAddr := os.Getenv("SERVER_ADDRESS"); envFlagRunAddr != "" {
+		FlagRunAddr = envFlagRunAddr
+	}
+
+	if envFlagBaseShortenerAddr := os.Getenv("BASE_URL"); envFlagBaseShortenerAddr != "" {
+		FlagBaseShortenerAddr = envFlagBaseShortenerAddr
+	}
 }
