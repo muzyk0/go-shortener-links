@@ -1,12 +1,12 @@
-package main
+package utils
 
 import (
 	"math/rand"
 	"time"
 )
 
-// RandomString generates a random string of a given length
-func RandomString(length int) string {
+// GenerateRandomString generates a random string of a given length
+func GenerateRandomString(length int) string {
 	if length <= 0 {
 		return ""
 	}

@@ -1,13 +1,14 @@
-package main
+package controllers
 
 import (
+	"go-shorener-links/config"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func AppRouter() chi.Router {
+func AppRouter(c *config.Config) chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RealIP)
@@ -18,9 +19,8 @@ func AppRouter() chi.Router {
 		w.WriteHeader(403)
 	})
 
-	r.Route("/", func(r chi.Router) {
-		r.Get("/{id}", RedirectHandle)
-		r.Post("/", CreateShortLinkHandle)
-	})
+	shortenerController := NewShortenerController(c)
+
+	r.Mount("/", shortenerController.Route())
 	return r
 }

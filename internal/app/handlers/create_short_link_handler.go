@@ -1,20 +1,21 @@
-package main
+package handlers
 
 import (
 	"fmt"
-	"go-shorener-links/config"
+	"github.com/muzyk0/go-shortener-links/internal/app/database"
+	"github.com/muzyk0/go-shortener-links/internal/app/utils"
 	"io"
 	"net/http"
 	"net/url"
 )
 
-func CreateShortLinkHandle(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) CreateShortLinkHandle(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 	resBody, err := io.ReadAll(r.Body)
 
 	if err != nil {
-		http.Error(w, "Not found", http.StatusForbidden)
+		http.Error(w, "Not sending payload data", http.StatusBadRequest)
 	}
 
 	urlDestination := string(resBody)
@@ -35,16 +36,16 @@ func CreateShortLinkHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	generatedID := RandomString(8)
+	generatedID := utils.GenerateRandomString(8)
 
-	db[generatedID] = urlDestination
+	database.Set(generatedID, urlDestination)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 
-	host := config.FlagBaseShortenerAddr
+	host := h.config.FlagBaseShortenerAddr
 
-	if config.FlagBaseShortenerAddr == "" {
+	if h.config.FlagBaseShortenerAddr == "" {
 		host = fmt.Sprintf("http://%s", r.Host)
 	}
 

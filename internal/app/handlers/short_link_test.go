@@ -1,7 +1,8 @@
-package main
+package handlers
 
 import (
 	"context"
+	"go-shorener-links/config"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -58,6 +59,9 @@ func TestShortLink(t *testing.T) {
 		},
 	}
 
+	appConfig := config.NewConfig()
+	appHandlers := NewHandlers(appConfig)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.name == "Should generate short link" {
@@ -65,7 +69,7 @@ func TestShortLink(t *testing.T) {
 				w := httptest.NewRecorder()
 				r.Header.Set("Content-Type", "text/plain")
 
-				CreateShortLinkHandle(w, r)
+				appHandlers.CreateShortLinkHandle(w, r)
 
 				res := w.Result()
 				defer res.Body.Close()
@@ -85,7 +89,7 @@ func TestShortLink(t *testing.T) {
 
 				rn = rn.WithContext(context.WithValue(rn.Context(), chi.RouteCtxKey, rctx))
 
-				RedirectHandle(wn, rn)
+				appHandlers.RedirectHandle(wn, rn)
 
 				res2 := wn.Result()
 				defer res2.Body.Close()
@@ -104,7 +108,7 @@ func TestShortLink(t *testing.T) {
 
 				r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
-				RedirectHandle(w, r)
+				appHandlers.RedirectHandle(w, r)
 
 				res := w.Result()
 				defer res.Body.Close()
@@ -120,7 +124,7 @@ func TestShortLink(t *testing.T) {
 
 				r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
-				RedirectHandle(w, r)
+				appHandlers.RedirectHandle(w, r)
 
 				res := w.Result()
 				defer res.Body.Close()

@@ -1,16 +1,17 @@
-package main
+package handlers
 
 import (
+	"github.com/muzyk0/go-shortener-links/internal/app/database"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func RedirectHandle(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) RedirectHandle(w http.ResponseWriter, r *http.Request) {
 	// Extract the ID from URL path
 	id := chi.URLParam(r, "id")
 
-	if res, exists := db[id]; exists {
+	if res, exists := database.Get(id); exists {
 		// w.Header().Set("Content-Type", "text/plain")
 		// w.Header().Set("location", res)
 
