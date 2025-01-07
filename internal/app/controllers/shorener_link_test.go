@@ -96,14 +96,14 @@ func TestShortenerLink(t *testing.T) {
 			},
 			testFunc: func(t *testing.T, tc testCase) {
 				type RequestBody struct {
-					Url string `json:"url"`
+					URL string `json:"url"`
 				}
 
 				type ResponseBody struct {
 					Result string `json:"result"`
 				}
 
-				jsonBody, err := json.Marshal(RequestBody{Url: tc.args.link})
+				jsonBody, err := json.Marshal(RequestBody{URL: tc.args.link})
 				require.NoError(t, err)
 
 				// Convert jsonBody to an io.Reader

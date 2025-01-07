@@ -25,7 +25,7 @@ func (c *ShortenerController) Route() *chi.Mux {
 		r.Get("/{id}", shortenerHandlers.RedirectHandle)
 		r.Post("/", shortenerHandlers.CreateShortLinkHandle)
 		//r.Route("/api/", func(r chi.Router) {
-		r.Post("/api/shorten", shortenerHandlers.CreateJsonShortLinkHandle)
+		r.Post("/api/shorten", shortenerHandlers.CreateJSONShortLinkHandle)
 		//})
 	})
 
