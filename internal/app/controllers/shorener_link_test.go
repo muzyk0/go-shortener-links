@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/muzyk0/go-shortener-links/internal/app/logger"
 	"go-shorener-links/config"
 	"io"
@@ -14,7 +16,7 @@ import (
 )
 
 func testRequest(t *testing.T, method,
-	path string, body io.Reader) (*http.Response, string) {
+	path string, body io.Reader) (*http.Response, []byte) {
 	req, err := http.NewRequest(method, path, body)
 	require.NoError(t, err)
 
@@ -33,8 +35,25 @@ func testRequest(t *testing.T, method,
 	respBody, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	return resp, string(respBody)
+	return resp, respBody
 }
+
+type (
+	args struct {
+		link string
+	}
+	want struct {
+		status int
+	}
+
+	testCase struct {
+		name     string
+		url      string
+		args     args
+		want     want
+		testFunc func(*testing.T, testCase)
+	}
+)
 
 func TestShortenerLink(t *testing.T) {
 	appConfig := config.NewConfig()
@@ -43,18 +62,7 @@ func TestShortenerLink(t *testing.T) {
 	ts := httptest.NewServer(AppRouter(appConfig, *appLogger))
 	defer ts.Close()
 
-	type args struct {
-		link string
-	}
-	type want struct {
-		status int
-	}
-	tests := []struct {
-		name string
-		url  string
-		args args
-		want want
-	}{
+	tests := []testCase{
 		{
 			name: "Should generate short link",
 			url:  "/",
@@ -63,6 +71,58 @@ func TestShortenerLink(t *testing.T) {
 			},
 			want: want{
 				status: http.StatusCreated,
+			},
+			testFunc: func(t *testing.T, tc testCase) {
+				res, resBody := testRequest(t, http.MethodPost, ts.URL+tc.url, strings.NewReader(tc.args.link))
+				defer res.Body.Close()
+				assert.Equal(t, res.StatusCode, tc.want.status)
+
+				redirectResponse, _ := testRequest(t, http.MethodGet, string(resBody), nil)
+				defer redirectResponse.Body.Close()
+				assert.Equal(t, http.StatusTemporaryRedirect, redirectResponse.StatusCode)
+
+				location := redirectResponse.Header.Get("location")
+				assert.Equal(t, tc.args.link, location)
+			},
+		},
+		{
+			name: "Should generate short link with JSON",
+			url:  "/api/shorten",
+			args: args{
+				link: "https://kagi.com/",
+			},
+			want: want{
+				status: http.StatusCreated,
+			},
+			testFunc: func(t *testing.T, tc testCase) {
+				type RequestBody struct {
+					URL string `json:"url"`
+				}
+
+				type ResponseBody struct {
+					Result string `json:"result"`
+				}
+
+				jsonBody, err := json.Marshal(RequestBody{URL: tc.args.link})
+				require.NoError(t, err)
+
+				// Convert jsonBody to an io.Reader
+				jsonBodyReader := bytes.NewReader(jsonBody)
+
+				res, resBody := testRequest(t, http.MethodPost, ts.URL+tc.url, jsonBodyReader)
+				defer res.Body.Close()
+				assert.Equal(t, tc.want.status, res.StatusCode)
+
+				var responseBody ResponseBody
+				err = json.Unmarshal(resBody, &responseBody)
+				require.NoError(t, err)
+
+				redirectResponse, _ := testRequest(t, http.MethodGet, responseBody.Result, nil)
+				defer redirectResponse.Body.Close()
+				assert.Equal(t, http.StatusTemporaryRedirect, redirectResponse.StatusCode)
+
+				location := redirectResponse.Header.Get("location")
+				assert.Equal(t, tc.args.link, location)
 			},
 		},
 		{
@@ -74,6 +134,11 @@ func TestShortenerLink(t *testing.T) {
 			want: want{
 				status: http.StatusForbidden,
 			},
+			testFunc: func(t *testing.T, tc testCase) {
+				res, _ := testRequest(t, http.MethodGet, ts.URL+tc.url, nil)
+				defer res.Body.Close()
+				assert.Equal(t, res.StatusCode, tc.want.status)
+			},
 		},
 		{
 			name: "Should return 403 for invalid method",
@@ -84,31 +149,25 @@ func TestShortenerLink(t *testing.T) {
 			want: want{
 				status: http.StatusForbidden,
 			},
+			testFunc: func(t *testing.T, tc testCase) {
+				res, _ := testRequest(t, http.MethodPut, ts.URL+tc.url, nil)
+				defer res.Body.Close()
+				assert.Equal(t, res.StatusCode, tc.want.status)
+			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.name == "Should generate short link" {
-				res, resBody := testRequest(t, http.MethodPost, ts.URL+tt.url, strings.NewReader(tt.args.link))
-				defer res.Body.Close()
-				assert.Equal(t, res.StatusCode, tt.want.status)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.testFunc(t, tc)
 
-				redirectResponse, _ := testRequest(t, http.MethodGet, string(resBody), nil)
-				defer redirectResponse.Body.Close()
-				assert.Equal(t, http.StatusTemporaryRedirect, redirectResponse.StatusCode)
-
-				location := redirectResponse.Header.Get("location")
-				assert.Equal(t, tt.args.link, location)
-			} else if tt.name == "Should return 403 for non-existing short link" {
-				res, _ := testRequest(t, http.MethodGet, ts.URL+tt.url, nil)
-				defer res.Body.Close()
-				assert.Equal(t, res.StatusCode, tt.want.status)
-			} else if tt.name == "Should return 403 for invalid method" {
-				res, _ := testRequest(t, http.MethodPut, ts.URL+tt.url, nil)
-				defer res.Body.Close()
-				assert.Equal(t, res.StatusCode, tt.want.status)
-			}
+			//if tc.name == "Should generate short link" {
+			//
+			//} else if tc.name == "Should return 403 for non-existing short link" {
+			//
+			//} else if tc.name == "Should return 403 for invalid method" {
+			//
+			//}
 		})
 	}
 }
